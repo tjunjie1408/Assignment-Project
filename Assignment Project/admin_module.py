@@ -3,7 +3,6 @@
 from utils import read_file, write_file
 
 def manage_vehicle(vehicle_id, status):
-    """Updates the status of a vehicle in the system."""
     vehicles = read_file("vehicles.txt")
     updated = False
     for i, vehicle in enumerate(vehicles):
@@ -17,7 +16,6 @@ def manage_vehicle(vehicle_id, status):
     print("Vehicle status updated.")
 
 def generate_report():
-    """Generates a summary report based on all records."""
     print("\n--- Report Summary ---")
     print("Orders:")
     for order in read_file("orders.txt"):
