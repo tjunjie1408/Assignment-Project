@@ -236,7 +236,7 @@ def load_graph_from_file(file_name):
     return graph
 
 # Load the graph from the file
-graph = load_graph_from_file("graph_data.txt")
+graph = load_graph_from_file("routes.txt")
 
 # 简单的Dijkstra算法（无需外部库）
 def read_routes_from_txt(file_name):
@@ -542,7 +542,7 @@ def load_graph_from_file(file_name):
     return graph
 
 # Load the graph from the file
-graph = load_graph_from_file("graph_data.txt")
+graph = load_graph_from_file("routes.txt")
 
 # Admin menu
 def admin_menu():
