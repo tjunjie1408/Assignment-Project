@@ -26,18 +26,30 @@ def get_next_order_number():
     user_order_file = f"{current_user}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
-            lines = file.readlines()
-            if not lines:
-                return 1
-            last_order = lines[-1]
-            last_order_number = int(last_order.split("Order number: ")[-1].strip())
-            return last_order_number + 1
+            orders = file.readlines()
+            if not orders:
+                return 1  # If there is no order, return 1 as the next order number
+
+            last_order = orders[-1].strip()
+            # Ensure that the last order number is parsed correctly
+            order_number_part = last_order.split("Order number: ")
+            if len(order_number_part) > 1:
+                last_order_number = int(order_number_part[-1].strip())
+                return last_order_number + 1  # Return the next order number
+            else:
+                print("Error: Last order format is incorrect.")
+                return 1  
     except FileNotFoundError:
-        return 1
+        return 1  # If the file does not exist, return 1 as the next order number
+    except ValueError as e:
+        print(f"ValueError: {e}")
+        return 1  # If a value error occurs, return 1 as the next order number
 
 def make_order():
     global current_user
-    size = int(input('Choose the consignment size:\n1. small parcel\n2. bulk order\n3. special cargo\nPlease enter the number(1-3):'))
+
+    # Select cargo size
+    size = int(input('Choose the consignment size:\n1. small parcel\n2. bulk order\n3. special cargo\nPlease enter the number(1-3): '))
     if size == 1:
         size = "small parcel"
     elif size == 2:
@@ -45,60 +57,103 @@ def make_order():
     elif size == 3:
         size = "special cargo"
     else:
-        print('Invalid choice')
-        user_menu()
+        print('Invalid choice. Please try again.')
+        return make_order() 
 
-    weight = int(input('Enter the weight of parcel(kg):'))
+    # Enter weight and select transportation
+    weight = int(input('Enter the weight of parcel (kg): '))
     if weight <= 10:
-        weight = "Motorcycle"
+        vehicle = "Motorcycle"
     elif 10 < weight <= 50:
-        weight = "Van"
+        vehicle = "Van"
     elif 50 < weight <= 100:
-        weight = "Truck"
+        vehicle = "Truck"
     else:
-        print('Invalid choice')
-        user_menu()
+        print('Invalid weight. Please try again.')
+        return make_order()  
 
-    package = int(input('Choose the package you want:\n1. Normal package\n2. Special package\n*Special package including liquid and glass.\nPlease enter the number(1/2):'))
+    # Select parcel type
+    package = int(input('Choose the package you want:\n1. Normal package\n2. Special package\n*Special package including liquid and glass.\nPlease enter the number (1/2): '))
     if package == 1:
         package = 'Normal package'
     elif package == 2:
         package = 'Special package'
     else:
-        print('Invalid choice')
-        user_menu()
+        print('Invalid choice. Please try again.')
+        return make_order()  
 
-    address = input("Please enter the address:\n")
-    word = address.split()
+    # Enter the address and check the length
+    while True:
+        address = input("Please enter the address:\n")
+        if len(address.split()) < 100:
+            break
+        else:
+            print("Your address is too long. Please limit it to 100 words.")
 
-    if len(word) >= 100:
-        print("Your address is too long. Please limit it in 100 words.")
-
-    order_payment = int(input('Choose the payment method:\n1. credit/debit card\n2. UPI\n3. Mobile wallet\n4. Cash\n5. Other\nPlease enter the number(1-5):'))
+    # Select payment method
+    order_payment = int(input('Choose the payment method:\n1. credit/debit card\n2. UPI\n3. Mobile wallet\n4. Cash\n5. Other\nPlease enter the number (1-5): '))
     if 1 <= order_payment <= 5:
         order_payment = "Done payment"
     else:
-        print('Invalid choice')
-        user_menu()
+        print('Invalid choice. Please try again.')
+        return make_order()  
 
+    order_time = input("Please enter the order time (YYYY-MM-DD HH:MM): ")
+
+    # Get order number and create order string
     order_number = get_next_order_number()
-    order = f"{order_payment} | {size}, {weight}, {package},{address}. Order number: {order_number}"
+    order = f"{order_payment} | {size}, {vehicle}, {package}, {address}, {order_time}. Order number: {order_number}"
 
+    # Write orders to user order files
     user_order_file = f"{current_user}_order_history.txt"
     with open(user_order_file, "a") as file:
         file.write(f"{order}\n")
-    print(f"{order_payment}\nOrder checking: {size}, {weight}, {package}, {address}. This is order number {order_number}")
-    user_menu()
+
+    # Output order information
+    print(f"{order_payment}\nOrder checking: {size}, {vehicle}, {package}, {address}, Order time: {order_time}. This is order number {order_number}")
+    user_menu()  
 
 def check_order():
     user_order_file = f"{current_user}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
-            print("Your Order History:")
-            print(file.read())
+            orders = file.readlines()
     except FileNotFoundError:
         print("No orders found.")
-    user_menu()
+        return
+
+    if not orders:
+        print("No orders found.")
+        return
+
+    print("\nYour Order History:")
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
+    print("=" * 140) 
+
+    for order in orders:
+        parts = order.strip().split(" | ")
+        if len(parts) < 2:
+            print(f"Invalid order format: {order.strip()}, skipping this entry.")
+            continue  # Skip incorrectly formatted orders
+
+        payment_status = parts[0]
+        details = parts[1].split(", ")
+
+        # Check length of details
+        if len(details) < 5:  
+            print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
+            continue 
+
+        # Extract details
+        consignment_size = details[0]
+        vehicle_type = details[1]
+        package_type = details[2]
+        address = details[3]
+        order_time = details[4] 
+        order_number = details[-1].split(": ")[-1] 
+
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+    user_menu()  
 
 def cancel_order():
     user_order_file = f"{current_user}_order_history.txt"
