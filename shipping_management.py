@@ -292,6 +292,16 @@ def user_main():
         else:
             print("Invalid choice. Please try again.")
 
+def get_valid_float(prompt):
+    """Get valid floating point input"""
+    while True:
+        value = input(prompt).strip()
+        try:
+            return float(value)
+        except ValueError:
+            print("Invalid input, please enter a number.")
+
+
 # Initialization of the graph (representing distances between different locations)
 def load_graph_from_file(file_name):
     """Loads graph data from a specified file."""
@@ -364,38 +374,49 @@ def view_routes(file_name):
             print(f"Start: {start}, End: {end}, Distance: {distance} km")
 
 def dijkstra(graph, start, end):
-    """Finds the shortest path using Dijkstra's algorithm."""
-    distances = {node: float('inf') for node in graph}
+    """使用 Dijkstra 算法计算最短路径"""
+    distances = {}
+    for node in graph:
+        distances[node] = float('inf')
     distances[start] = 0
-    previous_nodes = {node: None for node in graph}
+
+    previous_nodes = {}
+    for node in graph:
+        previous_nodes[node] = None
+
     unvisited = set(graph.keys())
 
     while unvisited:
-        current_node = min(
-            (node for node in unvisited if node in distances),
-            key=lambda node: distances[node],
-            default=None
-        )
+        current_node = None
+
+        # 找到未访问节点中距离最小的节点
+        for node in unvisited:
+            if current_node is None or distances[node] < distances[current_node]:
+                current_node = node
 
         if current_node is None or distances[current_node] == float('inf'):
             break
 
         unvisited.remove(current_node)
 
+        # 更新邻居节点的距离
         for neighbor, weight in graph[current_node].items():
-            if neighbor in distances:  # Check if neighbor is in distances
-                distance = distances[current_node] + weight
-                if distance < distances[neighbor]:
-                    distances[neighbor] = distance
-                    previous_nodes[neighbor] = current_node
+            new_distance = distances[current_node] + weight
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                previous_nodes[neighbor] = current_node
 
-    path, current = [], end
+    # 回溯路径
+    path = []
+    current = end
     while current:
-        path.append(current)
+        path.insert(0, current)
         current = previous_nodes[current]
-    path.reverse()
 
+    if distances[end] == float('inf'):
+        return float('inf'), []
     return distances[end], path
+
 
 def route_and_fuel_management(file_name):
     """Manages routes and calculates costs."""
@@ -480,14 +501,14 @@ def route_and_cost_calculation():
     
     # Validate distance input
     try:
-        distance = float(input("Enter the distance (in km): "))
+        distance = get_valid_float("Please enter the distance in kilometers: ")
     except ValueError:
         print("Invalid distance. Please enter a numeric value.")
         return
 
     # Validate weight input
     try:
-        weight = float(input("Enter the weight of the shipment (in kg): "))
+        weight = get_valid_float("Please enter the weight of the shipment in kilograms: ")
     except ValueError:
         print("Invalid weight. Please enter a numeric value.")
         return
