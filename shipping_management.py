@@ -9,7 +9,7 @@ def shipping_management_main():
         
         choice = input("Enter your choice: ")
         if choice == "1":
-            user_menu()
+            user_main()
         elif choice == "2":
             admin_menu()
         elif choice == "3":
@@ -20,7 +20,7 @@ def shipping_management_main():
         else:
             print("Invalid choice. Please try again.")
 
-current_user = None #User feature
+current_user = None
 
 def get_next_order_number():
     user_order_file = f"{current_user}_order_history.txt"
@@ -36,6 +36,7 @@ def get_next_order_number():
         return 1
 
 def make_order():
+    global current_user
     size = int(input('Choose the consignment size:\n1. small parcel\n2. bulk order\n3. special cargo\nPlease enter the number(1-3):'))
     if size == 1:
         size = "small parcel"
@@ -67,6 +68,12 @@ def make_order():
         print('Invalid choice')
         user_menu()
 
+    address = input("Please enter the address:\n")
+    word = address.split()
+
+    if len(word) >= 100:
+        print("Your address is too long. Please limit it in 100 words.")
+
     order_payment = int(input('Choose the payment method:\n1. credit/debit card\n2. UPI\n3. Mobile wallet\n4. Cash\n5. Other\nPlease enter the number(1-5):'))
     if 1 <= order_payment <= 5:
         order_payment = "Done payment"
@@ -75,13 +82,12 @@ def make_order():
         user_menu()
 
     order_number = get_next_order_number()
-    order = f"{order_payment} | {size}, {weight}, {package}. Order number: {order_number}"
+    order = f"{order_payment} | {size}, {weight}, {package},{address}. Order number: {order_number}"
 
     user_order_file = f"{current_user}_order_history.txt"
     with open(user_order_file, "a") as file:
         file.write(f"{order}\n")
-
-    print(f"{order_payment}\nOrder checking: {size}, {weight}, {package}. This is order number {order_number}")
+    print(f"{order_payment}\nOrder checking: {size}, {weight}, {package}, {address}. This is order number {order_number}")
     user_menu()
 
 def check_order():
@@ -150,7 +156,7 @@ def review():
 
 def exit():
     print("Thank you!")
-    main()
+    user_main()
 
 def user_menu():
     menu = int(input("Order management:\n1-Make Orders\n2-Check Orders\n3-Cancel Orders\n4-Reorder\n5.Rating and Review\n6.Exit\nPlease enter the number: "))
@@ -180,11 +186,14 @@ def sign_up():
                 existing_username, _ = user.strip().split(',')
                 if existing_username == username:
                     print("Username already signed up. Try a different one.")
-                    return
+                    user_main()
     except FileNotFoundError:
-        with open("users.txt", "a") as file:
-            file.write(f"{username},{password}\n")
-        print("Sign-up successful.")
+        pass
+
+    with open("users.txt", "a") as file:
+        file.write(f"{username},{password}\n")
+    print("Sign-up successful.")
+    user_menu()
 
 def log_in():
     global current_user
@@ -202,10 +211,12 @@ def log_in():
                     user_menu()
                     return
             print("Invalid username or password.")
+            user_main()
     except FileNotFoundError:
         print("No users found. Please sign up first.")
+        user_main()
 
-def main():
+def user_main():
     while True:
         choice = input("Choose an option:\n1. Sign Up\n2. Log In\n3. Exit\nEnter your choice (1/2/3): ")
         if choice == '1':
@@ -214,7 +225,7 @@ def main():
             log_in()
         elif choice == '3':
             print("Goodbye!")
-            quit()
+            break
         else:
             print("Invalid choice. Please try again.")
 
@@ -544,6 +555,18 @@ def load_graph_from_file(file_name):
 # Load the graph from the file
 graph = load_graph_from_file("routes.txt")
 
+def check_user_order():
+    global current_user
+    print(f"Current User: {current_user}")
+    user_order_file = f"{current_user}_order_history.txt"
+    try:
+        with open(user_order_file, "r") as file:
+            print("Your Order History:")
+            print(file.read())
+    except FileNotFoundError:
+        print("No orders found.")
+    admin_menu()
+
 # Admin menu
 def admin_menu():
     VEHICLE_FILE_NAME = "vehicles.txt"
@@ -563,7 +586,8 @@ def admin_menu():
         print("7. View All Routes")
         print("8. Route and Fuel Management")
         print("9. Route and Cost Calculation")
-        print("10. Exit")
+        print("10. Check User Order History")
+        print("11. Exit")
 
         choice = input("Enter your choice: ").strip()
         if choice == '1':
@@ -594,6 +618,8 @@ def admin_menu():
         elif choice == '9':
             route_and_cost_calculation()
         elif choice == '10':
+            check_user_order()
+        elif choice == '11':
             # Save vehicles to file before exiting
             save_vehicles_to_file(VEHICLE_FILE_NAME)
             print("\nExiting Admin Menu. Goodbye!")
@@ -710,32 +736,69 @@ def profile_menu(driver_id):
             break
         else:
             print("Invalid choice. Please try again.")
+def view_user_orders(username):
+    # This function should display the orders of the user
+    user_order_file = f"{username}_order_history.txt"
+    try:
+        with open(user_order_file, "r") as file:
+            print(f"Order History for {username}:")
+            print(file.read())
+    except FileNotFoundError:
+        print(f"No orders found for user: {username}")
 
 def delivery_menu(driver_id):
     while True:
         print("\nDelivery Management Menu")
         print("1. View Delivery Details")
-        print("2. Back to Main Menu")
+        print("2. View User Orders")
+        print("3. Back to Main Menu")
 
         choice = input("Enter your choice: ")
 
         if choice == '1':
             view_delivery_details(driver_id)
         elif choice == '2':
+            username = input("Enter the username of the user whose orders you want to view: ")
+            view_user_orders(username)
+        elif choice == '3':
             break
         else:
             print("Invalid choice. Please try again.")
 
+def view_or_calculate_route(driver_id):
+    print("Choose an option:")
+    print("1. View Pre-Planned Best Route")
+    print("2. Calculate Shortest Route")
+    
+    choice = input("Enter your choice: ")
+    if choice == '1':
+        view_best_route(driver_id)
+    elif choice == '2':
+        start = input("Enter the start location: ").strip()
+        end = input("Enter the destination location: ").strip()
+        calculate_shortest_route(start, end)
+    else:
+        print("Invalid choice. Please try again.")
+            
+def calculate_shortest_route(start, end):
+    """Calculate the shortest route"""
+    distance, path = dijkstra(graph, start, end)  # Used Dijkstra algorithm
+    if distance == float('inf'):
+        print(f"No route found from {start} to {end}.")
+    else:
+        print(f"Shortest distance from {start} to {end}: {distance} km")
+        print(f"Path: {' -> '.join(path)}")
+
 def route_menu(driver_id):
     while True:
         print("\nRoute Management Menu")
-        print("1. View Pre-Planned and Best Route")
+        print("1. View Or Calculate the Best Route")
         print("2. Back to Main Menu")
 
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            view_best_route(driver_id)
+            view_or_calculate_route(driver_id)
         elif choice == '2':
             break
         else:
@@ -825,18 +888,12 @@ def view_consignment_details(driver_id):
     if not found:
         print("No consignment details found.")
 
-def view_best_route(driver_id):
-    routes = read_file('routes.txt')
-
-    print("\nPre-Planned and Best Route:")
-    found = False
-    for route in routes:
-        if route[0] == driver_id:
-            print(f"Route ID: {route[1]}, Route: {route[2]}, Fuel Efficiency: {route[3]}, Time Efficiency: {route[4]}")
-            found = True
-
-    if not found:
-        print("No route details found.")
+def view_best_route():
+    """Show the Pre-Planned route"""
+    print("\n---Pre-Planned Best Routes---")
+    print("1. Route 1: Johor - Kuala Lumpur - Butterworth - Kedah -  Perlis")
+    print("2. Route 2: Johor - Kuala Lumpur - Terengganu - Kelantan")
+    
 
 # Start the admin menu
 shipping_management_main()
