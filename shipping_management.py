@@ -47,7 +47,6 @@ def get_next_order_number():
 
 def make_order():
     global current_user
-
     # Select cargo size
     size = int(input('Choose the consignment size:\n1. small parcel\n2. bulk order\n3. special cargo\nPlease enter the number(1-3): '))
     if size == 1:
@@ -114,6 +113,7 @@ def make_order():
     user_menu()  
 
 def check_order():
+    global current_user
     user_order_file = f"{current_user}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
@@ -209,26 +209,24 @@ def review():
     else:
         print("Thanks for your command!")
 
-def exit():
-    print("Thank you!")
-    user_main()
-
 def user_menu():
-    menu = int(input("Order management:\n1-Make Orders\n2-Check Orders\n3-Cancel Orders\n4-Reorder\n5.Rating and Review\n6.Exit\nPlease enter the number: "))
-    if menu == 1:
-        make_order()
-    elif menu == 2:
-        check_order()
-    elif menu == 3:
-        cancel_order()
-    elif menu == 4:
-        re_order()
-    elif menu == 5:
-        review()
-    elif menu == 6:
-        exit()
-    else:
-        print("Please Choose A Valid Option.")
+    while True:
+        menu = int(input("Order management:\n1-Make Orders\n2-Check Orders\n3-Cancel Orders\n4-Reorder\n5.Rating and Review\n6.Exit\nPlease enter the number: "))
+        if menu == 1:
+            make_order()
+        elif menu == 2:
+            check_order()
+        elif menu == 3:
+            cancel_order()
+        elif menu == 4:
+            re_order()
+        elif menu == 5:
+            review()
+        elif menu == 6:
+            print("Thank you")
+            break
+        else:
+            print("Please Choose A Valid Option.")
 
 def sign_up():
     username = input("Enter a username: ")
@@ -614,12 +612,43 @@ def check_user_order():
     global current_user
     print(f"Current User: {current_user}")
     user_order_file = f"{current_user}_order_history.txt"
+    
     try:
         with open(user_order_file, "r") as file:
-            print("Your Order History:")
-            print(file.read())
+            orders = file.readlines()
     except FileNotFoundError:
         print("No orders found.")
+        return 
+
+    if not orders:
+        print("No orders found.")
+        return 
+
+    print("\nYour Order History:")
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
+    print("=" * 140)  
+
+    for order in orders:
+        parts = order.strip().split(" | ")
+        if len(parts) < 2:
+            print(f"Invalid order format: {order.strip()}, skipping this entry.")
+            continue  
+
+        payment_status = parts[0]
+        details = parts[1].split(", ")
+
+        if len(details) < 5: 
+            print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
+            continue  
+
+        consignment_size = details[0]
+        vehicle_type = details[1]
+        package_type = details[2]
+        address = details[3]
+        order_time = details[4] 
+        order_number = details[-1].split(": ")[-1] 
+
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
     admin_menu()
     
 def view_driver_deliveries():
