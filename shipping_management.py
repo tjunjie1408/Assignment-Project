@@ -149,11 +149,12 @@ def check_order():
         vehicle_type = details[1]
         package_type = details[2]
         address = details[3]
-        order_time = details[4] 
+        order_time = details[4].split(". Order number:")[0]  # 只保留日期和时间部分
         order_number = details[-1].split(": ")[-1] 
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
-    user_menu()  
+    user_menu()
+  
 
 def cancel_order():
     user_order_file = f"{current_user}_order_history.txt"
@@ -374,7 +375,7 @@ def view_routes(file_name):
             print(f"Start: {start}, End: {end}, Distance: {distance} km")
 
 def dijkstra(graph, start, end):
-    """使用 Dijkstra 算法计算最短路径"""
+    """Calculating the shortest path using Dijkstra's algorithm"""
     distances = {}
     for node in graph:
         distances[node] = float('inf')
@@ -389,7 +390,7 @@ def dijkstra(graph, start, end):
     while unvisited:
         current_node = None
 
-        # 找到未访问节点中距离最小的节点
+        # Find the node with the smallest distance among the unvisited nodes
         for node in unvisited:
             if current_node is None or distances[node] < distances[current_node]:
                 current_node = node
@@ -399,14 +400,14 @@ def dijkstra(graph, start, end):
 
         unvisited.remove(current_node)
 
-        # 更新邻居节点的距离
+        # Update the distance of neighboring nodes
         for neighbor, weight in graph[current_node].items():
             new_distance = distances[current_node] + weight
             if new_distance < distances[neighbor]:
                 distances[neighbor] = new_distance
                 previous_nodes[neighbor] = current_node
 
-    # 回溯路径
+    # Backtracking paths
     path = []
     current = end
     while current:
@@ -697,46 +698,47 @@ graph = load_graph_from_file("routes.txt")
 
 def check_user_order():
     global current_user
-    print(f"Current User: {current_user}")
     user_order_file = f"{current_user}_order_history.txt"
-    
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
     except FileNotFoundError:
         print("No orders found.")
-        return 
+        return
 
     if not orders:
         print("No orders found.")
-        return 
+        return
 
     print("\nYour Order History:")
     print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140)  
+    print("=" * 140) 
 
     for order in orders:
         parts = order.strip().split(" | ")
         if len(parts) < 2:
             print(f"Invalid order format: {order.strip()}, skipping this entry.")
-            continue  
+            continue  # Skip incorrectly formatted orders
 
         payment_status = parts[0]
         details = parts[1].split(", ")
 
-        if len(details) < 5: 
+        # Check length of details
+        if len(details) < 5:  
             print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
-            continue  
+            continue 
 
+        # Extract details
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
         address = details[3]
-        order_time = details[4] 
+        order_time = details[4].split(". Order number:")[0] 
         order_number = details[-1].split(": ")[-1] 
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
     admin_menu()
+
     
 def view_driver_deliveries():
     print("\n--- Driver Deliveries Overview ---")
@@ -831,25 +833,48 @@ def admin_menu():
 drivers = {}
 
 def read_file(file_name):
-    """Read data from a text file and return as a list of lists."""
     data = []
     try:
-        with open(file_name, 'r') as file:
+        with open(file_name, 'r', encoding='utf-8') as file:
             for line in file:
-                if line.strip():  # Ignore empty lines
-                    data.append(line.strip().split(','))
+                if line.strip():
+                    row = []
+                    in_quotes = False
+                    current_field = []
+                    for char in line.strip():
+                        if char == '"':
+                            in_quotes = not in_quotes  
+                        elif char == ',' and not in_quotes:
+                            row.append(''.join(current_field).strip())
+                            current_field = []
+                        else:
+                            current_field.append(char)
+                    row.append(''.join(current_field).strip())  
+                    data.append(row)
     except FileNotFoundError:
         print(f"File '{file_name}' not found.")
     return data
 
-def write_file(file_name, data): # Write data to a text file
-    with open(file_name, 'w') as file:
+def write_file(file_name, data):
+    with open(file_name, 'w', encoding='utf-8') as file:
         for entry in data:
-            file.write(','.join(entry) + '\n')
+            escaped_entry = []
+            for field in entry:
+                if ',' in field or '"' in field:  
+                    field = '"' + field.replace('"', '""') + '"'  
+                escaped_entry.append(field)
+            file.write(','.join(escaped_entry) + '\n')
 
-def append_file(file_name, new_entry): # Append data to a text file
-    with open(file_name, 'a') as file:
-        file.write(','.join(new_entry) + '\n')
+def append_file(file_name, new_entry):
+    """Manually append a single row of data to the file, escaping fields containing commas."""
+    with open(file_name, 'a', encoding='utf-8') as file:
+        escaped_entry = []
+        for field in new_entry:
+            if ',' in field or '"' in field:  
+                field = '"' + field.replace('"', '""') + '"'  
+            escaped_entry.append(field)
+        file.write(','.join(escaped_entry) + '\n')
+
 
 def driver_main():
     print("Welcome to the Driver Management System")
@@ -935,24 +960,110 @@ def profile_menu(driver_id):
             break
         else:
             print("Invalid choice. Please try again.")
+
 def view_user_orders(username):
-    # This function should display the orders of the user
-    user_order_file = f"{username}_order_history.txt"
+    global current_user
+    user_order_file = f"{current_user}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
-            print(f"Order History for {username}:")
-            print(file.read())
+            orders = file.readlines()
     except FileNotFoundError:
-        print(f"No orders found for user: {username}")
-def update_delivery_status(driver_id):
-    # This function should update the delivery status of a package
-    delivery_status = input("Enter delivery status (in transit/completed): ").strip().lower()
-    if delivery_status not in ["in transit", "completed"]:
-        print("Invalid status. Please enter 'in transit' or 'completed'.")
+        print("No orders found.")
         return
+
+    if not orders:
+        print("No orders found.")
+        return
+
+    print("\nYour Order History:")
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
+    print("=" * 140) 
+
+    for order in orders:
+        parts = order.strip().split(" | ")
+        if len(parts) < 2:
+            print(f"Invalid order format: {order.strip()}, skipping this entry.")
+            continue  # Skip incorrectly formatted orders
+
+        payment_status = parts[0]
+        details = parts[1].split(", ")
+
+        # Check length of details
+        if len(details) < 5:  
+            print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
+            continue 
+
+        # Extract details
+        consignment_size = details[0]
+        vehicle_type = details[1]
+        package_type = details[2]
+        address = details[3]
+        order_time = details[4].split(". Order number:")[0]  
+        order_number = details[-1].split(": ")[-1] 
+
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+
+def manage_delivery(driver_id):
+    user_order_file = f"{current_user}_order_history.txt" 
+
+    try:
+        with open(user_order_file, "r") as file:
+            orders = file.readlines()
+    except FileNotFoundError:
+        print("No order history found for this driver.")
+        return
+
+    if not orders:
+        print("No orders found.")
+        return
+
+    print("\nConsignment/Shipment Details:")
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
+    print("=" * 140)
+    
+    # Display order information
+    for order in orders:
+        parts = order.strip().split(" | ")
+        if len(parts) < 2:
+            print(f"Invalid order format: {order.strip()}, skipping this entry.")
+            continue
+
+        payment_status = parts[0]
+        details = parts[1].split(", ")
+
+        if len(details) < 5:
+            print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
+            continue
+
+        consignment_size = details[0]
+        vehicle_type = details[1]
+        package_type = details[2]
+        address = details[3]
+        order_time = details[4]
+        order_number = details[-1].split(": ")[-1]
+
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+
+    # Record pickup times and estimated delivery times
+    pickup_time = input("\nEnter pickup time (YYYY-MM-DD HH:MM): ").strip()
+    delivery_time = input("Enter expected delivery time (YYYY-MM-DD HH:MM): ").strip()
+
+    # Update Delivery Status
+    while True:
+        delivery_status = input("Enter delivery status (in transit/completed): ").strip().lower()
+        if delivery_status in ["in transit", "completed"]:
+            break
+        print("Invalid status. Please enter 'in transit' or 'completed'.")
+
+    # Keeping updated delivery records
     with open('driver_deliveries.txt', 'a') as file:
-        file.write(f"{driver_id},{delivery_status}\n")
-    print(f"Delivery status for driver {driver_id} updated to '{delivery_status}'.")
+        file.write(
+            f"Driver ID: {driver_id}, Pickup Time: {pickup_time}, Expected Delivery Time: {delivery_time}, Status: {delivery_status}\n"
+        )
+
+    print(f"\nDelivery details for driver {driver_id} updated successfully.")
+
+
 
 def delivery_menu(driver_id):
     while True:
@@ -964,7 +1075,7 @@ def delivery_menu(driver_id):
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            update_delivery_status(driver_id)
+            manage_delivery(driver_id)
         elif choice == '2':
             username = input("Enter the username of the user whose orders you want to view: ")
             view_user_orders(username)
@@ -1020,7 +1131,7 @@ def view_profile(driver_id):
             print("\nDriver Profile:")
             print(f"Name: {profile[1]}")
             print(f"Contact: {profile[2]}")
-            print(f"Address: {profile[3]}")
+            print(f"Address: {profile[3]}") 
             print(f"Availability: {profile[4]}")
             print(f"License: {profile[5]}")
             print(f"Health Report: {profile[6]}")
@@ -1033,12 +1144,10 @@ def update_profile(driver_id):
     for i, profile in enumerate(profiles):
         if profile[0] == driver_id:
             print("\nCurrent Profile Details:")
-            print(f"1. Name: {profile[1]}")
-            print(f"2. Contact: {profile[2]}")
-            print(f"3. Address: {profile[3]}")
-            print(f"4. Availability: {profile[4]}")
-            print(f"5. License: {profile[5]}")
-            print(f"6. Health Report: {profile[6]}")
+            fields = ["Name", "Contact", "Address", "Availability", "License", "Health Report"]
+            for idx, field in enumerate(fields, 1):
+                value = profile[idx]
+                print(f"{idx}. {field}: {value}")
 
             field_to_update = input("Enter the number of the field you want to update: ")
             if field_to_update in ['1', '2', '3', '4', '5', '6']:
@@ -1063,26 +1172,14 @@ def add_new_profile():
 
     name = input("Name: ")
     contact = input("Contact: ")
-    address = input("Address: ")
+    address = input("Address (full address): ")  
     availability = input("Availability (Yes/No): ")
-    license = input("License: ")
+    license_status = input("License: ")
     health_report = input("Health Report: ")
 
-    new_profile = [driver_id, name, contact, address, availability, license, health_report]
+    new_profile = [driver_id, name, contact, address, availability, license_status, health_report]
     append_file('drivers.txt', new_profile)
     print("New profile added successfully.")
-
-def view_consignment_details(driver_id):
-    consignments = read_file('consignments.txt')
-    print("\nConsignment/Shipment Details:")
-    found = False
-    for consignment in consignments:
-        if consignment[0] == driver_id:
-            print(
-                f"Package: {consignment[1]}, Weight: {consignment[2]}, Special Requirements: {consignment[3]}, Freight: {consignment[4]}, Time Duration: {consignment[5]}")
-            found = True
-    if not found:
-        print("No consignment details found.")
 
 def view_best_route():
     """Show the Pre-Planned route"""
