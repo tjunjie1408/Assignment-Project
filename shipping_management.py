@@ -195,19 +195,29 @@ def re_order():
     make_order()
 
 def review():
-    rating = int(input("Please rate from 1 to 5 stars:"))
-    if 1 <= rating <= 5:
-        print(f"Thank you for your rating of {rating} stars!")
-    else:
-        print("Please enter valid option.")
+    while True:
+        rating = int(input("Please rate from 1 to 5 stars: "))
+        if 1 <= rating <= 5:
+            print(f"Thank you for your rating of {rating} stars!")
+        else:
+            print("Please enter a valid option.")
 
-    command = input("Please share your command of our service:")
-    words = command.split()
+        command = input("Please share your comments about our service (or type 'exit' to quit): ")
+        
+        if command.lower() == 'exit':
+            print("Exiting the review section.")
+            break
 
-    if len(words) >= 100:
-        print("Your command is too long. Please limit it in 100 words.")
-    else:
-        print("Thanks for your command!")
+        words = command.split()
+
+        if len(words) >= 100:
+            print("Your command is too long. Please limit it to 100 words.")
+        else:
+            print("Thanks for your command!")
+        another_review = input("Would you like to submit another review? (yes/no): ").strip().lower()
+        if another_review != 'yes':
+            print("Exiting the review section.")
+            break
 
 def user_menu():
     while True:
@@ -513,19 +523,48 @@ vehicles = {}
 
 def load_vehicles_from_file(file_name):
     """Load vehicles from a text file."""
+    global vehicles  # Ensure you are modifying the global vehicles dictionary
     try:
         with open(file_name, 'r') as file:
             for line in file:
                 if line.strip():  # Ignore empty lines
-                    vehicle_id, vehicle_type, performance_rating, inspection_due = line.strip().split(',')
+                    parts = line.strip().split(',')
+                    if len(parts) != 4:
+                        print(f"Skipping line due to incorrect format: {line.strip()}")
+                        continue  # Skip this line if it doesn't have exactly 4 parts
+                    
+                    vehicle_id, vehicle_type, performance_rating, inspection_due = parts
                     vehicles[vehicle_id] = {
                         "type": vehicle_type,
                         "performance_rating": float(performance_rating),
-                        "maintenance_history": [],
+                        "maintenance_history": [],  # Initialize as empty
                         "inspection_due": inspection_due.lower() == 'true'
                     }
+        if not vehicles:
+            print("No vehicles found in the file.")
     except FileNotFoundError:
         print(f"File '{file_name}' not found. Starting with an empty fleet.")
+    except Exception as e:
+        print(f"Error reading file '{file_name}': {e}")
+
+def load_maintenance_history(file_name):
+    """Load maintenance history from a text file."""
+    try:
+        with open(file_name, 'r') as file:
+            for line in file:
+                if line.strip():  # Ignore empty lines
+                    parts = line.strip().split(',')
+                    if len(parts) < 3:
+                        print(f"Skipping line due to incorrect format: {line.strip()}")
+                        continue  # Skip this line if it doesn't have at least 3 parts
+                    
+                    vehicle_id, date, description = parts
+                    if vehicle_id in vehicles:
+                        vehicles[vehicle_id]["maintenance_history"].append((date, description))
+                    else:
+                        print(f"Vehicle ID {vehicle_id} not found for maintenance history.")
+    except FileNotFoundError:
+        print(f"File '{file_name}' not found. No maintenance history loaded.")
     except Exception as e:
         print(f"Error reading file '{file_name}': {e}")
 
@@ -548,36 +587,26 @@ def add_vehicle(vehicle_id, vehicle_type, performance_rating):
             "inspection_due": False
         }
         print(f"Vehicle {vehicle_id} added successfully.")
-
-def log_vehicle_maintenance(vehicle_id, date, description):
-    """Log maintenance for a specific vehicle."""
+        save_vehicles_to_file("vehicles.txt")
+        
+def log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due):
+    """Log maintenance for a specific vehicle and set inspection alert."""
     if vehicle_id in vehicles:
-        vehicles[vehicle_id]["maintenance_history"].append((date, description))
-        print(f"Maintenance logged for vehicle {vehicle_id}.")
+        maintenance_record = (date, f"{description}. Mileage: {mileage} kilometers.")
+        vehicles[vehicle_id]["maintenance_history"].append(maintenance_record)
+        vehicles[vehicle_id]["inspection_due"] = inspection_due  # Set inspection due status
+        print(f"Maintenance logged for vehicle {vehicle_id}. Inspection due status set to {'Yes' if inspection_due else 'No'}.")
+        save_maintenance_history("maintenance_history.txt")  # Save to a separate file
+        save_vehicles_to_file("vehicles.txt")  # Save vehicle data after logging maintenance
     else:
         print("Vehicle ID not found.")
-
-def set_inspection_alert(vehicle_id, due):
-    """Set inspection alert for a specific vehicle."""
-    if vehicle_id in vehicles:
-        vehicles[vehicle_id]["inspection_due"] = due
-        print(f"Inspection alert set for vehicle {vehicle_id}.")
-    else:
-        print("Vehicle ID not found.")
-
-def view_vehicle_performance(vehicle_id):
-    """View performance and maintenance history of a specific vehicle."""
-    if vehicle_id in vehicles:
-        vehicle = vehicles[vehicle_id]
-        print(f"Vehicle ID: {vehicle_id}")
-        print(f"Vehicle Type: {vehicle['type']}")
-        print(f"Performance Rating: {vehicle['performance_rating']}")
-        print("Maintenance History:")
-        for date, description in vehicle["maintenance_history"]:
-            print(f" - {date}: {description}")
-        print(f"Inspection Due: {'Yes' if vehicle['inspection_due'] else 'No'}")
-    else:
-        print("Vehicle ID not found.")
+        
+def save_maintenance_history(file_name):
+    """Save maintenance history to a text file."""
+    with open(file_name, 'w') as file:
+        for vehicle_id, details in vehicles.items():
+            for date, description in details["maintenance_history"]:
+                file.write(f"{vehicle_id},{date},{description}\n")
 
 def view_all_vehicles():
     """View all vehicles in the fleet."""
@@ -585,8 +614,45 @@ def view_all_vehicles():
         print("No vehicles in the fleet.")
     else:
         for vehicle_id in vehicles:
-            view_vehicle_performance(vehicle_id)
+            vehicle = vehicles[vehicle_id]
+            print(f"Vehicle ID: {vehicle_id}, Type: {vehicle['type']}, Performance Rating: {vehicle['performance_rating']}, Inspection Due: {'Yes' if vehicle['inspection_due'] else 'No'}")
             print("-" * 30)
+
+def view_maintenance_history(file_name):
+    """View maintenance history for all vehicles."""
+    if not vehicles:
+        print("No vehicles in the system.")
+        return
+
+    for vehicle_id, details in vehicles.items():
+        print(f"\nVehicle ID: {vehicle_id}, Type: {details['type']}")
+        if details["maintenance_history"]:
+            print("Maintenance History:")
+            for date, description in details["maintenance_history"]:
+                print(f"  Date: {date}, Description: {description}")
+        else:
+            print("  No maintenance history available.")
+
+def view_single_vehicle_maintenance_history():
+    """View maintenance history for a single vehicle."""
+    vehicle_id = input("Enter Vehicle ID to view maintenance history: ").strip()
+    
+    if not vehicle_id:
+        print("Vehicle ID cannot be empty.")
+        return
+
+    if vehicle_id in vehicles:
+        print(f"\n--- Maintenance History for Vehicle ID: {vehicle_id} ---")
+        if vehicles[vehicle_id]["maintenance_history"]:
+            for date, description in vehicles[vehicle_id]["maintenance_history"]:
+                print(f" - Date: {date}, Description: {description}")
+        else:
+            print("No maintenance history available for this vehicle.")
+    else:
+        print("Vehicle ID not found.")
+
+file_name = "vehicles.txt"  
+load_vehicles_from_file(file_name)
 
 # Load routes from a file
 def load_graph_from_file(file_name):
@@ -666,17 +732,19 @@ def view_driver_deliveries():
 def admin_menu():
     VEHICLE_FILE_NAME = "vehicles.txt"
     ROUTE_FILE_NAME = "routes.txt"
+    MAINTENANCE_HISTORY_FILE_NAME = "maintenance_history.txt"
     
     # Load vehicles from file at the start of the admin menu
     load_vehicles_from_file(VEHICLE_FILE_NAME)
+    load_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
 
     while True:
         print("\n--- Admin Menu ---")
         print("1. Add Vehicle")
         print("2. Log Vehicle Maintenance")
-        print("3. Set Inspection Alert")
-        print("4. View Vehicle Performance")
-        print("5. View All Vehicles")
+        print("3. View All Vehicle")
+        print("4. View Maintenance History")
+        print("5. View Single Vehicle Maintenance History")
         print("6. Add Route Information")
         print("7. View All Routes")
         print("8. Route and Fuel Management")
@@ -687,39 +755,51 @@ def admin_menu():
 
         choice = input("Enter your choice: ").strip()
         if choice == '1':
-            vehicle_id = input("Enter Vehicle ID: ").strip()
-            vehicle_type = input("Enter Vehicle Type: ").strip()
+            vehicle_id = input("Enter Vehicle ID: ")
+            vehicle_type = input("Enter Vehicle Type: ")
             performance_rating = float(input("Enter Performance Rating: "))
             add_vehicle(vehicle_id, vehicle_type, performance_rating)
+            
         elif choice == '2':
-            vehicle_id = input("Enter Vehicle ID: ").strip()
-            date = input("Enter Maintenance Date (YYYY-MM-DD): ").strip()
-            description = input("Enter Maintenance Description: ").strip()
-            log_vehicle_maintenance(vehicle_id, date, description)
+            vehicle_id = input("Enter Vehicle ID: ")
+            date = input("Enter Maintenance Date (YYYY-MM-DD): ")
+            description = input("Enter Maintenance Description: ")
+            mileage = float(input("Enter Mileage: "))
+            due_input = input("Is inspection due? (yes/no): ").strip().lower()
+            inspection_due = due_input == 'yes'
+            log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due)
+            
         elif choice == '3':
-            vehicle_id = input("Enter Vehicle ID: ").strip()
-            due = input("Is inspection due? (yes/no): ").strip().lower() == 'yes'
-            set_inspection_alert(vehicle_id, due)
-        elif choice == '4':
-            vehicle_id = input("Enter Vehicle ID: ").strip()
-            view_vehicle_performance(vehicle_id)
-        elif choice == '5':
             view_all_vehicles()
+            
+        elif choice == '4':
+            view_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
+            
+        elif choice == '5':
+            view_single_vehicle_maintenance_history()
+            
         elif choice == '6':
             add_route(ROUTE_FILE_NAME)
+            
         elif choice == '7':
             view_routes(ROUTE_FILE_NAME)
+            
         elif choice == '8':
             route_and_fuel_management(ROUTE_FILE_NAME)
+            
         elif choice == '9':
             route_and_cost_calculation()
+            
         elif choice == '10':
             check_user_order()
+            
         elif choice == '11':
             view_driver_deliveries()
+            
         elif choice == '12':
             # Save vehicles to file before exiting
             save_vehicles_to_file(VEHICLE_FILE_NAME)
+            save_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
             print("\nExiting Admin Menu. Goodbye!")
             break
         else:
