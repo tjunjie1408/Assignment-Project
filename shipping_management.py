@@ -229,7 +229,7 @@ def user_main():
         else:
             print("Invalid choice. Please try again.")
 
-# 图的初始化（代表不同地点之间的距离）
+# Initialization of the graph (representing distances between different locations)
 def load_graph_from_file(file_name):
     """Loads graph data from a specified file."""
     graph = {}
@@ -249,7 +249,7 @@ def load_graph_from_file(file_name):
 # Load the graph from the file
 graph = load_graph_from_file("routes.txt")
 
-# 简单的Dijkstra算法（无需外部库）
+# Simple Dijkstra algorithm（No any library）
 def read_routes_from_txt(file_name):
     """Reads route information from a .txt file."""
     routes = {}
