@@ -566,6 +566,17 @@ def check_user_order():
     except FileNotFoundError:
         print("No orders found.")
     admin_menu()
+    
+def view_driver_deliveries():
+    print("\n--- Driver Deliveries Overview ---")
+    try:
+        with open('driver_deliveries.txt', 'r') as file:
+            for line in file:
+                if line.strip():
+                    driver_id, status = line.strip().split(',')
+                    print(f"Driver ID: {driver_id}, Status: {status}")
+    except FileNotFoundError:
+        print("No delivery status file found.")
 
 # Admin menu
 def admin_menu():
@@ -587,7 +598,8 @@ def admin_menu():
         print("8. Route and Fuel Management")
         print("9. Route and Cost Calculation")
         print("10. Check User Order History")
-        print("11. Exit")
+        print("11. View Driver Deliveries")
+        print("12. Exit")
 
         choice = input("Enter your choice: ").strip()
         if choice == '1':
@@ -620,6 +632,8 @@ def admin_menu():
         elif choice == '10':
             check_user_order()
         elif choice == '11':
+            view_driver_deliveries()
+        elif choice == '12':
             # Save vehicles to file before exiting
             save_vehicles_to_file(VEHICLE_FILE_NAME)
             print("\nExiting Admin Menu. Goodbye!")
@@ -745,18 +759,27 @@ def view_user_orders(username):
             print(file.read())
     except FileNotFoundError:
         print(f"No orders found for user: {username}")
+def update_delivery_status(driver_id):
+    # This function should update the delivery status of a package
+    delivery_status = input("Enter delivery status (in transit/completed): ").strip().lower()
+    if delivery_status not in ["in transit", "completed"]:
+        print("Invalid status. Please enter 'in transit' or 'completed'.")
+        return
+    with open('driver_deliveries.txt', 'a') as file:
+        file.write(f"{driver_id},{delivery_status}\n")
+    print(f"Delivery status for driver {driver_id} updated to '{delivery_status}'.")
 
 def delivery_menu(driver_id):
     while True:
         print("\nDelivery Management Menu")
-        print("1. View Delivery Details")
+        print("1. Update and View Delivery Status")
         print("2. View User Orders")
         print("3. Back to Main Menu")
 
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            view_delivery_details(driver_id)
+            update_delivery_status(driver_id)
         elif choice == '2':
             username = input("Enter the username of the user whose orders you want to view: ")
             view_user_orders(username)
@@ -844,18 +867,6 @@ def update_profile(driver_id):
                 print("Invalid choice. Returning to menu.")
                 return
     print("Profile not found.")
-
-def view_delivery_details(driver_id):
-    deliveries = read_file('deliveries.txt')
-
-    print("\nDelivery Details:")
-    found = False
-    for delivery in deliveries:
-        if delivery[0] == driver_id:
-            print(f"Delivery ID: {delivery[1]}, Status: {delivery[2]}, Route: {delivery[3]}, Schedule: {delivery[4]}")
-            found = True
-    if not found:
-        print("No delivery details found.")
 
 def add_new_profile():
     profiles = read_file('drivers.txt')
