@@ -20,46 +20,35 @@ def shipping_management_main():
         else:
             print("Invalid choice. Please try again.")
 
-current_user = None
-
-def get_next_order_number():
-    user_order_file = f"{current_user}_order_history.txt"
+def get_next_order_number(username):
+    """Get the user's next order number"""
+    user_order_file = f"{username}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
             if not orders:
-                return 1  # If there is no order, return 1 as the next order number
-
+                return 1  # Return 1 if there is no order
             last_order = orders[-1].strip()
-            # Ensure that the last order number is parsed correctly
             order_number_part = last_order.split("Order number: ")
             if len(order_number_part) > 1:
                 last_order_number = int(order_number_part[-1].strip())
-                return last_order_number + 1  # Return the next order number
+                return last_order_number + 1
             else:
-                print("Error: Last order format is incorrect.")
-                return 1  
+                return 1
     except FileNotFoundError:
-        return 1  # If the file does not exist, return 1 as the next order number
-    except ValueError as e:
-        print(f"ValueError: {e}")
-        return 1  # If a value error occurs, return 1 as the next order number
+        return 1
 
-def make_order():
-    global current_user
+
+def make_order(username):
+    """user-ordered"""
     # Select cargo size
     size = int(input('Choose the consignment size:\n1. small parcel\n2. bulk order\n3. special cargo\nPlease enter the number(1-3): '))
-    if size == 1:
-        size = "small parcel"
-    elif size == 2:
-        size = "bulk order"
-    elif size == 3:
-        size = "special cargo"
-    else:
+    size = {1: "small parcel", 2: "bulk order", 3: "special cargo"}.get(size, None)
+    if not size:
         print('Invalid choice. Please try again.')
-        return make_order() 
+        return make_order(username)
 
-    # Enter weight and select transportation
+    # Enter the weight and select the means of transportation
     weight = int(input('Enter the weight of parcel (kg): '))
     if weight <= 10:
         vehicle = "Motorcycle"
@@ -69,19 +58,16 @@ def make_order():
         vehicle = "Truck"
     else:
         print('Invalid weight. Please try again.')
-        return make_order()  
+        return make_order(username)
 
-    # Select parcel type
+    # Select Package Type
     package = int(input('Choose the package you want:\n1. Normal package\n2. Special package\n*Special package including liquid and glass.\nPlease enter the number (1/2): '))
-    if package == 1:
-        package = 'Normal package'
-    elif package == 2:
-        package = 'Special package'
-    else:
+    package = {1: "Normal package", 2: "Special package"}.get(package, None)
+    if not package:
         print('Invalid choice. Please try again.')
-        return make_order()  
+        return make_order(username)
 
-    # Enter the address and check the length
+    # Enter Address
     while True:
         address = input("Please enter the address:\n")
         if len(address.split()) < 100:
@@ -89,32 +75,33 @@ def make_order():
         else:
             print("Your address is too long. Please limit it to 100 words.")
 
-    # Select payment method
+    # Select Payment Method
     order_payment = int(input('Choose the payment method:\n1. credit/debit card\n2. UPI\n3. Mobile wallet\n4. Cash\n5. Other\nPlease enter the number (1-5): '))
     if 1 <= order_payment <= 5:
         order_payment = "Done payment"
     else:
         print('Invalid choice. Please try again.')
-        return make_order()  
+        return make_order(username)
 
+    # Enter order time
     order_time = input("Please enter the order time (YYYY-MM-DD HH:MM): ")
 
-    # Get order number and create order string
-    order_number = get_next_order_number()
+    # Get order number and generate order information
+    order_number = get_next_order_number(username)
     order = f"{order_payment} | {size}, {vehicle}, {package}, {address}, {order_time}. Order number: {order_number}"
 
-    # Write orders to user order files
-    user_order_file = f"{current_user}_order_history.txt"
+    # Write order information to user files
+    user_order_file = f"{username}_order_history.txt"
     with open(user_order_file, "a") as file:
         file.write(f"{order}\n")
 
-    # Output order information
     print(f"{order_payment}\nOrder checking: {size}, {vehicle}, {package}, {address}, Order time: {order_time}. This is order number {order_number}")
-    user_menu()  
+    user_menu(username)
 
-def check_order():
-    global current_user
-    user_order_file = f"{current_user}_order_history.txt"
+
+def check_order(username):
+    """View Order"""
+    user_order_file = f"{username}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
@@ -128,46 +115,46 @@ def check_order():
 
     print("\nYour Order History:")
     print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140) 
+    print("=" * 140)
 
     for order in orders:
         parts = order.strip().split(" | ")
         if len(parts) < 2:
             print(f"Invalid order format: {order.strip()}, skipping this entry.")
-            continue  # Skip incorrectly formatted orders
+            continue
 
         payment_status = parts[0]
         details = parts[1].split(", ")
-
-        # Check length of details
-        if len(details) < 5:  
+        if len(details) < 5:
             print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
-            continue 
+            continue
 
-        # Extract details
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
         address = details[3]
-        order_time = details[4].split(". Order number:")[0]  # 只保留日期和时间部分
-        order_number = details[-1].split(": ")[-1] 
+        order_time = details[4].split(". Order number:")[0]
+        order_number = details[-1].split(": ")[-1]
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
-    user_menu()
+    user_menu(username)
   
 
-def cancel_order():
-    user_order_file = f"{current_user}_order_history.txt"
+def cancel_order(username):
+    """Cancel Order Function"""
+    user_order_file = f"{username}_order_history.txt"
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
     except FileNotFoundError:
         print("No orders to cancel.")
-        user_menu()
+        user_menu(username)
+        return
 
     if not orders:
         print("No orders to cancel.")
-        user_menu()
+        user_menu(username)
+        return
 
     print("Your Order History:")
     for idx, order in enumerate(orders, start=1):
@@ -176,6 +163,7 @@ def cancel_order():
     try:
         order_to_cancel = int(input("Enter the order number you want to cancel: "))
         order_found = False
+
         for order in orders:
             if f"Order number: {order_to_cancel}" in order:
                 orders.remove(order)
@@ -190,7 +178,9 @@ def cancel_order():
             print("Invalid order number.")
     except ValueError:
         print("Invalid input. Please enter a number.")
-    user_menu()
+
+    user_menu(username)
+
 
 def re_order():
     make_order()
@@ -220,17 +210,24 @@ def review():
             print("Exiting the review section.")
             break
 
-def user_menu():
+def user_menu(username):
     while True:
-        menu = int(input("Order management:\n1-Make Orders\n2-Check Orders\n3-Cancel Orders\n4-Reorder\n5.Rating and Review\n6.Exit\nPlease enter the number: "))
+        menu = int(input(f"Welcome {username}! Order management:\n"
+                         "1-Make Orders\n"
+                         "2-Check Orders\n"
+                         "3-Cancel Orders\n"
+                         "4-Reorder\n"
+                         "5-Rating and Review\n"
+                         "6-Exit\n"
+                         "Please enter the number: "))
         if menu == 1:
-            make_order()
+            make_order(username)
         elif menu == 2:
-            check_order()
+            check_order(username)
         elif menu == 3:
-            cancel_order()
+            cancel_order(username)
         elif menu == 4:
-            re_order()
+            re_order(username)
         elif menu == 5:
             review()
         elif menu == 6:
@@ -240,6 +237,7 @@ def user_menu():
             print("Please Choose A Valid Option.")
 
 def sign_up():
+    """User Registration"""
     username = input("Enter a username: ")
     password = input("Enter a password: ")
 
@@ -250,17 +248,18 @@ def sign_up():
                 existing_username, _ = user.strip().split(',')
                 if existing_username == username:
                     print("Username already signed up. Try a different one.")
-                    user_main()
+                    return user_main()
     except FileNotFoundError:
         pass
 
     with open("users.txt", "a") as file:
         file.write(f"{username},{password}\n")
     print("Sign-up successful.")
-    user_menu()
+    user_menu(username)
+
 
 def log_in():
-    global current_user
+    """user login"""
     username = input("Enter your username: ")
     password = input("Enter your password: ")
 
@@ -270,9 +269,8 @@ def log_in():
             for user in users:
                 existing_username, existing_password = user.strip().split(',')
                 if existing_username == username and existing_password == password:
-                    current_user = username
                     print("Login successful!")
-                    user_menu()
+                    user_menu(username)
                     return
             print("Invalid username or password.")
             user_main()
@@ -282,11 +280,11 @@ def log_in():
 
 def user_main():
     while True:
-        choice = input("Choose an option:\n1. Sign Up\n2. Log In\n3. Exit\nEnter your choice (1/2/3): ")
+        choice = input("Choose an option:\n1. Log in\n2. Sign up\n3. Exit\nEnter your choice (1/2/3): ")
         if choice == '1':
-            sign_up()
-        elif choice == '2':
             log_in()
+        elif choice == '2':
+            sign_up()
         elif choice == '3':
             print("Goodbye!")
             break
@@ -543,61 +541,52 @@ def route_and_cost_calculation():
 
 vehicles = {}
 
-def load_vehicles_from_file(file_name):
+def load_vehicles_from_file(vehicle_file):
     """Load vehicles from a text file."""
-    global vehicles  # Ensure you are modifying the global vehicles dictionary
+    vehicles = {}
     try:
-        with open(file_name, 'r') as file:
+        with open(vehicle_file, 'r') as file:
             for line in file:
-                if line.strip():  # Ignore empty lines
+                if line.strip():
                     parts = line.strip().split(',')
                     if len(parts) != 4:
                         print(f"Skipping line due to incorrect format: {line.strip()}")
-                        continue  # Skip this line if it doesn't have exactly 4 parts
-                    
+                        continue
                     vehicle_id, vehicle_type, performance_rating, inspection_due = parts
                     vehicles[vehicle_id] = {
                         "type": vehicle_type,
                         "performance_rating": float(performance_rating),
-                        "maintenance_history": [],  # Initialize as empty
+                        "maintenance_history": [],
                         "inspection_due": inspection_due.lower() == 'true'
                     }
-        if not vehicles:
-            print("No vehicles found in the file.")
     except FileNotFoundError:
-        print(f"File '{file_name}' not found. Starting with an empty fleet.")
-    except Exception as e:
-        print(f"Error reading file '{file_name}': {e}")
+        print(f"File '{vehicle_file}' not found. Starting with an empty fleet.")
+    return vehicles
 
-def load_maintenance_history(file_name):
+def load_maintenance_history(maintenance_file, vehicles):
     """Load maintenance history from a text file."""
     try:
-        with open(file_name, 'r') as file:
+        with open(maintenance_file, 'r') as file:
             for line in file:
-                if line.strip():  # Ignore empty lines
+                if line.strip():
                     parts = line.strip().split(',')
                     if len(parts) < 3:
                         print(f"Skipping line due to incorrect format: {line.strip()}")
-                        continue  # Skip this line if it doesn't have at least 3 parts
-                    
+                        continue
                     vehicle_id, date, description = parts
                     if vehicle_id in vehicles:
                         vehicles[vehicle_id]["maintenance_history"].append((date, description))
-                    else:
-                        print(f"Vehicle ID {vehicle_id} not found for maintenance history.")
     except FileNotFoundError:
-        print(f"File '{file_name}' not found. No maintenance history loaded.")
-    except Exception as e:
-        print(f"Error reading file '{file_name}': {e}")
+        print(f"File '{maintenance_file}' not found. No maintenance history loaded.")
 
-def save_vehicles_to_file(file_name):
+def save_vehicles_to_file(vehicle_file, vehicles):
     """Save vehicles to a text file."""
-    with open(file_name, 'w') as file:
+    with open(vehicle_file, 'w') as file:
         for vehicle_id, details in vehicles.items():
             inspection_due = 'true' if details["inspection_due"] else 'false'
             file.write(f"{vehicle_id},{details['type']},{details['performance_rating']},{inspection_due}\n")
 
-def add_vehicle(vehicle_id, vehicle_type, performance_rating):
+def add_vehicle(vehicle_id, vehicle_type, performance_rating, vehicles, vehicle_file):
     """Add a new vehicle to the fleet."""
     if vehicle_id in vehicles:
         print("Vehicle ID already exists.")
@@ -609,60 +598,63 @@ def add_vehicle(vehicle_id, vehicle_type, performance_rating):
             "inspection_due": False
         }
         print(f"Vehicle {vehicle_id} added successfully.")
-        save_vehicles_to_file("vehicles.txt")
+        save_vehicles_to_file(vehicle_file, vehicles)
         
-def log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due):
+def log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due, vehicles, maintenance_file, vehicle_file):
     """Log maintenance for a specific vehicle and set inspection alert."""
     if vehicle_id in vehicles:
         maintenance_record = (date, f"{description}. Mileage: {mileage} kilometers.")
         vehicles[vehicle_id]["maintenance_history"].append(maintenance_record)
-        vehicles[vehicle_id]["inspection_due"] = inspection_due  # Set inspection due status
+        vehicles[vehicle_id]["inspection_due"] = inspection_due
         print(f"Maintenance logged for vehicle {vehicle_id}. Inspection due status set to {'Yes' if inspection_due else 'No'}.")
-        save_maintenance_history("maintenance_history.txt")  # Save to a separate file
-        save_vehicles_to_file("vehicles.txt")  # Save vehicle data after logging maintenance
+        save_maintenance_history(maintenance_file, vehicles)
+        save_vehicles_to_file(vehicle_file, vehicles)
     else:
         print("Vehicle ID not found.")
         
-def save_maintenance_history(file_name):
+def save_maintenance_history(maintenance_file, vehicles):
     """Save maintenance history to a text file."""
-    with open(file_name, 'w') as file:
+    with open(maintenance_file, 'w') as file:
         for vehicle_id, details in vehicles.items():
             for date, description in details["maintenance_history"]:
                 file.write(f"{vehicle_id},{date},{description}\n")
 
-def view_all_vehicles():
+def view_all_vehicles(vehicles):
     """View all vehicles in the fleet."""
     if not vehicles:
         print("No vehicles in the fleet.")
     else:
-        for vehicle_id in vehicles:
-            vehicle = vehicles[vehicle_id]
-            print(f"Vehicle ID: {vehicle_id}, Type: {vehicle['type']}, Performance Rating: {vehicle['performance_rating']}, Inspection Due: {'Yes' if vehicle['inspection_due'] else 'No'}")
+        for vehicle_id, details in vehicles.items():
+            print(f"Vehicle ID: {vehicle_id}, Type: {details['type']}, Performance Rating: {details['performance_rating']}, Inspection Due: {'Yes' if details['inspection_due'] else 'No'}")
             print("-" * 30)
 
-def view_maintenance_history(file_name):
+def view_maintenance_history():
     """View maintenance history for all vehicles."""
-    if not vehicles:
-        print("No vehicles in the system.")
-        return
+    try:
+        with open('maintenance_history.txt', 'r') as file:
+            maintenance_records = file.readlines()
+        
+        if not maintenance_records:
+            print("No maintenance history available.")
+            return
 
-    for vehicle_id, details in vehicles.items():
-        print(f"\nVehicle ID: {vehicle_id}, Type: {details['type']}")
-        if details["maintenance_history"]:
-            print("Maintenance History:")
-            for date, description in details["maintenance_history"]:
-                print(f"  Date: {date}, Description: {description}")
-        else:
-            print("  No maintenance history available.")
+        print("\n--- Maintenance History ---")
+        for record in maintenance_records:
+            parts = record.strip().split(',')
+            if len(parts) < 3:
+                print(f"Skipping invalid record: {record.strip()}")
+                continue
+            
+            vehicle_id = parts[0].strip()
+            date = parts[1].strip()
+            description = parts[2].strip()
+            print(f"Vehicle ID: {vehicle_id}, Date: {date}, Description: {description}")
 
-def view_single_vehicle_maintenance_history():
+    except FileNotFoundError:
+        print("No maintenance history file found.")
+
+def view_single_vehicle_maintenance_history(vehicle_id, vehicles):
     """View maintenance history for a single vehicle."""
-    vehicle_id = input("Enter Vehicle ID to view maintenance history: ").strip()
-    
-    if not vehicle_id:
-        print("Vehicle ID cannot be empty.")
-        return
-
     if vehicle_id in vehicles:
         print(f"\n--- Maintenance History for Vehicle ID: {vehicle_id} ---")
         if vehicles[vehicle_id]["maintenance_history"]:
@@ -696,11 +688,10 @@ def load_graph_from_file(file_name):
 # Load the graph from the file
 graph = load_graph_from_file("routes.txt")
 
-def check_user_order():
-    global current_user
-    user_order_file = f"{current_user}_order_history.txt"
+def check_user_orders(user_file):
+    """View orders for a specific user."""
     try:
-        with open(user_order_file, "r") as file:
+        with open(user_file, "r") as file:
             orders = file.readlines()
     except FileNotFoundError:
         print("No orders found.")
@@ -710,31 +701,29 @@ def check_user_order():
         print("No orders found.")
         return
 
-    print("\nYour Order History:")
+    print("\nUser Order History:")
     print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140) 
+    print("=" * 140)
 
     for order in orders:
         parts = order.strip().split(" | ")
         if len(parts) < 2:
             print(f"Invalid order format: {order.strip()}, skipping this entry.")
-            continue  # Skip incorrectly formatted orders
+            continue
 
         payment_status = parts[0]
         details = parts[1].split(", ")
 
-        # Check length of details
-        if len(details) < 5:  
+        if len(details) < 5:
             print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
-            continue 
+            continue
 
-        # Extract details
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
         address = details[3]
-        order_time = details[4].split(". Order number:")[0] 
-        order_number = details[-1].split(": ")[-1] 
+        order_time = details[4].split(". Order number:")[0]
+        order_number = details[-1].split(": ")[-1]
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
     admin_menu()
@@ -745,21 +734,46 @@ def view_driver_deliveries():
     try:
         with open('driver_deliveries.txt', 'r') as file:
             for line in file:
-                if line.strip():
-                    driver_id, status = line.strip().split(',')
-                    print(f"Driver ID: {driver_id}, Status: {status}")
+                if line.strip():  # Check if the line is not empty
+                    # Initialize variables
+                    driver_id = None
+                    status = None
+                    pickup_time = None
+                    delivery_time = None
+                    
+                    # Split the line by commas
+                    parts = line.strip().split(',')
+                    
+                    # Loop through parts to find Driver ID, Status, Pickup Time, and Expected Delivery Time
+                    for part in parts:
+                        part = part.strip()  # Remove leading/trailing whitespace
+                        if 'Driver ID:' in part:
+                            driver_id = part.split(':')[1].strip()  # Get the value after 'Driver ID:'
+                        elif 'Status:' in part:
+                            status = part.split(':')[1].strip()  # Get the value after 'Status:'
+                        elif 'Pickup Time:' in part:
+                            pickup_time = part.split(':')[1].strip()  # Get the value after 'Pickup Time:'
+                        elif 'Expected Delivery Time:' in part:
+                            delivery_time = part.split(':')[1].strip()  # Get the value after 'Expected Delivery Time:'
+                    
+                    # Check if all required fields were found
+                    if driver_id is not None and status is not None and pickup_time is not None and delivery_time is not None:
+                        print(f"Driver ID: {driver_id}, Status: {status}, Pickup Time: {pickup_time}, Expected Delivery Time: {delivery_time}")
+                    else:
+                        print(f"Skipping line due to missing information: {line.strip()}")
     except FileNotFoundError:
         print("No delivery status file found.")
 
 # Admin menu
 def admin_menu():
     VEHICLE_FILE_NAME = "vehicles.txt"
+    vehicles = load_vehicles_from_file(VEHICLE_FILE_NAME)
     ROUTE_FILE_NAME = "routes.txt"
     MAINTENANCE_HISTORY_FILE_NAME = "maintenance_history.txt"
     
     # Load vehicles from file at the start of the admin menu
     load_vehicles_from_file(VEHICLE_FILE_NAME)
-    load_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
+    load_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME, vehicles)
 
     while True:
         print("\n--- Admin Menu ---")
@@ -781,25 +795,25 @@ def admin_menu():
             vehicle_id = input("Enter Vehicle ID: ")
             vehicle_type = input("Enter Vehicle Type: ")
             performance_rating = float(input("Enter Performance Rating: "))
-            add_vehicle(vehicle_id, vehicle_type, performance_rating)
+            add_vehicle(vehicle_id, vehicle_type, performance_rating, vehicles, VEHICLE_FILE_NAME)
             
         elif choice == '2':
             vehicle_id = input("Enter Vehicle ID: ")
             date = input("Enter Maintenance Date (YYYY-MM-DD): ")
             description = input("Enter Maintenance Description: ")
             mileage = float(input("Enter Mileage: "))
-            due_input = input("Is inspection due? (yes/no): ").strip().lower()
-            inspection_due = due_input == 'yes'
-            log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due)
+            inspection_due = input("Is inspection due? (yes/no): ").lower() == 'yes'
+            log_vehicle_maintenance(vehicle_id, date, description, mileage, inspection_due, vehicles, MAINTENANCE_HISTORY_FILE_NAME, VEHICLE_FILE_NAME)
             
         elif choice == '3':
-            view_all_vehicles()
+            view_all_vehicles(vehicles)
             
         elif choice == '4':
-            view_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
+            view_maintenance_history()
             
         elif choice == '5':
-            view_single_vehicle_maintenance_history()
+            vehicle_id = input("Enter Vehicle ID to view maintenance history: ")
+            view_single_vehicle_maintenance_history(vehicle_id, vehicles)
             
         elif choice == '6':
             add_route(ROUTE_FILE_NAME)
@@ -814,15 +828,17 @@ def admin_menu():
             route_and_cost_calculation()
             
         elif choice == '10':
-            check_user_order()
+            username = input("Enter the username of the user whose orders you want to check: ")
+            user_file = f"{username}_order_history.txt"  # Construct the user order file name
+            check_user_orders(user_file)  # Pass the user file to the function
             
         elif choice == '11':
             view_driver_deliveries()
             
         elif choice == '12':
             # Save vehicles to file before exiting
-            save_vehicles_to_file(VEHICLE_FILE_NAME)
-            save_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME)
+            save_vehicles_to_file(VEHICLE_FILE_NAME, vehicles)
+            save_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME, vehicles)
             print("\nExiting Admin Menu. Goodbye!")
             break
         else:
@@ -962,8 +978,9 @@ def profile_menu(driver_id):
             print("Invalid choice. Please try again.")
 
 def view_user_orders(username):
-    global current_user
-    user_order_file = f"{current_user}_order_history.txt"
+    """View orders for a specific user."""
+    user_order_file = f"{username}_order_history.txt"
+    print(f"Looking for file: {user_order_file}")  # Debugging line
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
@@ -975,42 +992,42 @@ def view_user_orders(username):
         print("No orders found.")
         return
 
-    print("\nYour Order History:")
+    print("\nUser Order History:")
     print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140) 
+    print("=" * 140)
 
     for order in orders:
         parts = order.strip().split(" | ")
         if len(parts) < 2:
             print(f"Invalid order format: {order.strip()}, skipping this entry.")
-            continue  # Skip incorrectly formatted orders
+            continue
 
         payment_status = parts[0]
         details = parts[1].split(", ")
 
-        # Check length of details
-        if len(details) < 5:  
+        if len(details) < 5:
             print(f"Insufficient details in order: {order.strip()}, skipping this entry.")
-            continue 
+            continue
 
-        # Extract details
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
         address = details[3]
-        order_time = details[4].split(". Order number:")[0]  
-        order_number = details[-1].split(": ")[-1] 
+        order_time = details[4].split(". Order number:")[0]
+        order_number = details[-1].split(": ")[-1]
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
 
-def manage_delivery(driver_id):
-    user_order_file = f"{current_user}_order_history.txt" 
+
+def manage_delivery(driver_id, username):
+    """Manage order dispatch function"""
+    user_order_file = f"{username}_order_history.txt"
 
     try:
         with open(user_order_file, "r") as file:
             orders = file.readlines()
     except FileNotFoundError:
-        print("No order history found for this driver.")
+        print("No order history found for this user.")
         return
 
     if not orders:
@@ -1020,8 +1037,7 @@ def manage_delivery(driver_id):
     print("\nConsignment/Shipment Details:")
     print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
     print("=" * 140)
-    
-    # Display order information
+
     for order in orders:
         parts = order.strip().split(" | ")
         if len(parts) < 2:
@@ -1044,21 +1060,18 @@ def manage_delivery(driver_id):
 
         print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
 
-    # Record pickup times and estimated delivery times
     pickup_time = input("\nEnter pickup time (YYYY-MM-DD HH:MM): ").strip()
     delivery_time = input("Enter expected delivery time (YYYY-MM-DD HH:MM): ").strip()
 
-    # Update Delivery Status
     while True:
         delivery_status = input("Enter delivery status (in transit/completed): ").strip().lower()
         if delivery_status in ["in transit", "completed"]:
             break
         print("Invalid status. Please enter 'in transit' or 'completed'.")
 
-    # Keeping updated delivery records
     with open('driver_deliveries.txt', 'a') as file:
         file.write(
-            f"Driver ID: {driver_id}, Pickup Time: {pickup_time}, Expected Delivery Time: {delivery_time}, Status: {delivery_status}\n"
+            f"Driver ID: {driver_id}, User: {username}, Pickup Time: {pickup_time}, Expected Delivery Time: {delivery_time}, Status: {delivery_status}\n"
         )
 
     print(f"\nDelivery details for driver {driver_id} updated successfully.")
@@ -1075,7 +1088,8 @@ def delivery_menu(driver_id):
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            manage_delivery(driver_id)
+            username = input("Enter the username of the user whose delivery status you want to update: ")
+            manage_delivery(driver_id, username)
         elif choice == '2':
             username = input("Enter the username of the user whose orders you want to view: ")
             view_user_orders(username)
@@ -1091,7 +1105,7 @@ def view_or_calculate_route(driver_id):
     
     choice = input("Enter your choice: ")
     if choice == '1':
-        view_best_route(driver_id)
+        view_best_route()
     elif choice == '2':
         start = input("Enter the start location: ").strip()
         end = input("Enter the destination location: ").strip()
