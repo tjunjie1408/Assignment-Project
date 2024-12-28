@@ -449,20 +449,25 @@ def route_and_fuel_management(file_name):
 # Admin menu
 FILE_NAME = "routes.txt"
 
-# Constants
-FUEL_PRICE = 2.15
-SPECIAL_GOODS_EXTRA_PERCENTAGE = 1.2
-SPECIAL_GOODS_TYPES = ["normal", "fragile", "hazardous", "perishable"]
+def get_vehicle_prices():
+    """Return vehicle prices per kilometer."""
+    return {
+        "Motorcycle": 2.0,  # Price per km for normal goods
+        "Van": 5.0,
+        "Truck": 8.0
+    }
 
-# Vehicle prices
-vehicle_prices = {
-    "Motorcycle": 2.0,  # Price per km for normal goods
-    "Van": 5.0,
-    "Truck": 8.0
-}
+def get_fuel_price():
+    """Return the current fuel price."""
+    return 2.15  # Price per liter of fuel
 
-# Choose vehicle based on weight
+def get_special_goods_info():
+    """Return special goods surcharge percentage and valid types."""
+    return 1.2, ["normal", "fragile", "hazardous", "perishable"]
+
 def choose_vehicle_by_weight(weight):
+    """Choose the appropriate vehicle based on the weight of the cargo."""
+    vehicle_prices = get_vehicle_prices()
     if weight <= 10:
         return "Motorcycle", vehicle_prices["Motorcycle"]
     elif 10 < weight <= 100:
@@ -470,7 +475,6 @@ def choose_vehicle_by_weight(weight):
     else:
         return "Truck", vehicle_prices["Truck"]
 
-# Fuel and Transport Cost Calculation
 def calculate_fuel_cost(distance, vehicle_type):
     """Calculate fuel used and cost based on distance and vehicle type."""
     fuel_efficiency_mapping = {
@@ -482,8 +486,9 @@ def calculate_fuel_cost(distance, vehicle_type):
     if fuel_efficiency == 0:
         raise ValueError("Invalid vehicle type for fuel efficiency calculation.")
     
+    fuel_price = get_fuel_price()  # Retrieve current fuel price
     fuel_used = distance / fuel_efficiency
-    fuel_cost = fuel_used * FUEL_PRICE
+    fuel_cost = fuel_used * fuel_price
     return fuel_used, fuel_cost
 
 def calculate_transport_cost(distance, price_per_km):
@@ -492,8 +497,9 @@ def calculate_transport_cost(distance, price_per_km):
 
 def validate_cargo_type(cargo_type):
     """Validate the cargo type input."""
-    if cargo_type not in SPECIAL_GOODS_TYPES:
-        raise ValueError("Invalid cargo type. Please enter one of the following: " + ", ".join(SPECIAL_GOODS_TYPES))
+    _, special_goods_types = get_special_goods_info()
+    if cargo_type not in special_goods_types:
+        raise ValueError("Invalid cargo type. Please enter one of the following: " + ", ".join(special_goods_types))
 
 # Route and Cost Calculation
 def route_and_cost_calculation():
@@ -527,9 +533,10 @@ def route_and_cost_calculation():
     # Choose vehicle
     vehicle_type, price_per_km = choose_vehicle_by_weight(weight)
 
-    # Special goods surcharge
-    if cargo_type in SPECIAL_GOODS_TYPES:
-        price_per_km *= SPECIAL_GOODS_EXTRA_PERCENTAGE
+    # Apply special goods surcharge
+    surcharge_percentage, special_goods_types = get_special_goods_info()
+    if cargo_type in special_goods_types and cargo_type != "normal":
+        price_per_km *= surcharge_percentage
 
     # Calculate fuel and transport costs
     fuel_used, fuel_cost = calculate_fuel_cost(distance, vehicle_type)
