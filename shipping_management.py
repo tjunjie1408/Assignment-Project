@@ -182,10 +182,10 @@ def cancel_order(username):
     user_menu(username)
 
 
-def re_order():
-    make_order()
+def re_order(username):
+    make_order(username)
 
-def review():
+def review(username):
     while True:
         rating = int(input("Please rate from 1 to 5 stars: "))
         if 1 <= rating <= 5:
@@ -197,7 +197,7 @@ def review():
         
         if command.lower() == 'exit':
             print("Exiting the review section.")
-            break
+            user_main(username)
 
         words = command.split()
 
@@ -206,9 +206,13 @@ def review():
         else:
             print("Thanks for your command!")
         another_review = input("Would you like to submit another review? (yes/no): ").strip().lower()
-        if another_review != 'yes':
+        if another_review == 'no':
             print("Exiting the review section.")
-            break
+        elif another_review == 'yes':
+            review(username)
+        else:
+            print('Invalid option. Try again.')
+
 
 def user_menu(username):
     while True:
@@ -229,7 +233,7 @@ def user_menu(username):
         elif menu == 4:
             re_order(username)
         elif menu == 5:
-            review()
+            review(username)
         elif menu == 6:
             print("Thank you")
             break
