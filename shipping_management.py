@@ -197,7 +197,7 @@ def review(username):
         
         if command.lower() == 'exit':
             print("Exiting the review section.")
-            user_main(username)
+            user_menu(username)
 
         words = command.split()
 
