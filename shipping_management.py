@@ -186,32 +186,52 @@ def re_order(username):
     make_order(username)
 
 def review(username):
+    file_name = "reviews.txt"
+
     while True:
-        rating = int(input("Please rate from 1 to 5 stars: "))
-        if 1 <= rating <= 5:
-            print(f"Thank you for your rating of {rating} stars!")
-        else:
-            print("Please enter a valid option.")
+        # Get a valid rating from the user
+        while True:
+            try:
+                rating = int(input("Please rate from 1 to 5 stars: "))
+                if 1 <= rating <= 5:
+                    print(f"Thank you for your rating of {rating} stars!")
+                    break
+                else:
+                    print("Please enter a valid option between 1 and 5.")
+            except ValueError:
+                print("Invalid input. Please enter a number between 1 and 5.")
 
-        command = input("Please share your comments about our service (or type 'exit' to quit): ")
-        
-        if command.lower() == 'exit':
-            print("Exiting the review section.")
-            user_menu(username)
+        # Get a comment from the user
+        while True:
+            command = input("Please share your comments about our service (or type 'exit' to quit): ").strip()
 
-        words = command.split()
+            if command.lower() == 'exit':
+                print("Exiting the review section.")
+                return
 
-        if len(words) >= 100:
-            print("Your command is too long. Please limit it to 100 words.")
-        else:
-            print("Thanks for your command!")
+            words = command.split()
+
+            if len(words) > 100:
+                print("Your comment is too long. Please limit it to 100 words.")
+            else:
+                print("Thanks for your comment!")
+                break
+
+        # Save the rating and comment to the file
+        with open(file_name, "a") as file:
+            file.write(f"Username: {username}\n")
+            file.write(f"Rating: {rating}\n")
+            file.write(f"Comment: {command}\n")
+            file.write("---\n")
+
+        # Ask if the user wants to submit another review
         another_review = input("Would you like to submit another review? (yes/no): ").strip().lower()
         if another_review == 'no':
             print("Exiting the review section.")
-        elif another_review == 'yes':
-            review(username)
-        else:
-            print('Invalid option. Try again.')
+            break
+        elif another_review != 'yes':
+            print("Invalid option. Exiting the review section.")
+            break
 
 
 def user_menu(username):
