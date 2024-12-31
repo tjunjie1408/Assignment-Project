@@ -114,8 +114,8 @@ def check_order(username):
         return
 
     print("\nYour Order History:")
-    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140)
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<65} {'Order Time':<20}")
+    print("=" * 170)
 
     for order in orders:
         parts = order.strip().split(" | ")
@@ -132,11 +132,11 @@ def check_order(username):
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
-        address = details[3]
+        address = ",".join(details[3:-1])
         order_time = details[4].split(". Order number:")[0]
         order_number = details[-1].split(": ")[-1]
 
-        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<65} {order_time:<20}")
     user_menu(username)
   
 
@@ -256,7 +256,7 @@ def user_menu(username):
             review(username)
         elif menu == 6:
             print("Thank you")
-            break
+            user_main()
         else:
             print("Please Choose A Valid Option.")
 
@@ -311,7 +311,7 @@ def user_main():
             sign_up()
         elif choice == '3':
             print("Goodbye!")
-            break
+            shipping_management_main()
         else:
             print("Invalid choice. Please try again.")
 
@@ -733,8 +733,8 @@ def check_user_orders(user_file):
         return
 
     print("\nUser Order History:")
-    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140)
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<65} {'Order Time':<20}")
+    print("=" * 170)
 
     for order in orders:
         parts = order.strip().split(" | ")
@@ -752,11 +752,11 @@ def check_user_orders(user_file):
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
-        address = details[3]
+        address = ",".join(details[3:-1])
         order_time = details[4].split(". Order number:")[0]
         order_number = details[-1].split(": ")[-1]
 
-        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<65} {order_time:<20}")
     admin_menu()
 
     
@@ -871,7 +871,7 @@ def admin_menu():
             save_vehicles_to_file(VEHICLE_FILE_NAME, vehicles)
             save_maintenance_history(MAINTENANCE_HISTORY_FILE_NAME, vehicles)
             print("\nExiting Admin Menu. Goodbye!")
-            break
+            shipping_management_main()
         else:
             print("\nInvalid choice. Please try again.")
 
@@ -1024,8 +1024,8 @@ def view_user_orders(username):
         return
 
     print("\nUser Order History:")
-    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140)
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<65} {'Order Time':<20}")
+    print("=" * 170)
 
     for order in orders:
         parts = order.strip().split(" | ")
@@ -1043,11 +1043,11 @@ def view_user_orders(username):
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
-        address = details[3]
+        address = ",".join(details[3:-1])
         order_time = details[4].split(". Order number:")[0]
         order_number = details[-1].split(": ")[-1]
 
-        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<65} {order_time:<20}")
 
 
 def manage_delivery(driver_id, username):
@@ -1066,8 +1066,8 @@ def manage_delivery(driver_id, username):
         return
 
     print("\nConsignment/Shipment Details:")
-    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<40} {'Order Time':<20}")
-    print("=" * 140)
+    print(f"{'Order Number':<15} {'Payment Status':<15} {'Consignment Size':<20} {'Vehicle Type':<15} {'Package Type':<20} {'Address':<65} {'Order Time':<20}")
+    print("=" * 170)
 
     for order in orders:
         parts = order.strip().split(" | ")
@@ -1085,11 +1085,11 @@ def manage_delivery(driver_id, username):
         consignment_size = details[0]
         vehicle_type = details[1]
         package_type = details[2]
-        address = details[3]
+        address = ",".join(details[3:-1])
         order_time = details[4]
         order_number = details[-1].split(": ")[-1]
 
-        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<40} {order_time:<20}")
+        print(f"{order_number:<15} {payment_status:<15} {consignment_size:<20} {vehicle_type:<15} {package_type:<20} {address:<65} {order_time:<20}")
 
     pickup_time = input("\nEnter pickup time (YYYY-MM-DD HH:MM): ").strip()
     delivery_time = input("Enter expected delivery time (YYYY-MM-DD HH:MM): ").strip()
